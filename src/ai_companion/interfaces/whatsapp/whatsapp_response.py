@@ -110,6 +110,7 @@ async def whatsapp_handler(request: Request) -> Response:
             return Response(content="Unknown event type", status_code=400)
 
     except Exception as e:
+        print("######## Error processing message:", e)  # Debugging line to check errors
         logger.error(f"Error processing message: {e}", exc_info=True)
         return Response(content="Internal server error", status_code=500)
 
