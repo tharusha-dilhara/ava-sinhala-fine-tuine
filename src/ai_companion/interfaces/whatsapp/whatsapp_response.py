@@ -44,6 +44,9 @@ async def whatsapp_handler(request: Request) -> Response:
         print(data)  # Debugging line to check incoming data
         print("_______________________________________________________________________________________")
         change_value = data["entry"][0]["changes"][0]["value"]
+        print("_______________________________________________________________________________________")
+        print(change_value)
+        print("_______________________________________________________________________________________")
         if "messages" in change_value:
             message = change_value["messages"][0]
             from_number = message["from"]
