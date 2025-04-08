@@ -204,6 +204,10 @@ async def send_response(
             headers=headers,
             json=json_data,
         )
+    
+        if response.status_code != 200:
+            logger.error(f"Failed to send message: {response.status_code} - {response.text}")
+            print("Facebook API Error:", response.status_code, response.text)
 
     return response.status_code == 200
 
