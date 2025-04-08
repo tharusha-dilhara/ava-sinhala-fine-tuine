@@ -40,7 +40,9 @@ async def whatsapp_handler(request: Request) -> Response:
 
     try:
         data = await request.json()
+        print("_______________________________________________________________________________________")
         print(data)  # Debugging line to check incoming data
+        print("_______________________________________________________________________________________")
         change_value = data["entry"][0]["changes"][0]["value"]
         if "messages" in change_value:
             message = change_value["messages"][0]
