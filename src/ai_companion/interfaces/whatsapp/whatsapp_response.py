@@ -40,18 +40,8 @@ async def whatsapp_handler(request: Request) -> Response:
 
     try:
         data = await request.json()
-        logger.info(f"Incoming data: {data}")
-
-        # ✅ Validate the incoming structure
-        if not data.get("entry"):
-            return Response(content="No entry found", status_code=400)
-
-        change_value = (
-            data["entry"][0]
-            .get("changes", [{}])[0]
-            .get("value", {})
-        )
-
+        print(data)  # Debugging line to check incoming data
+        change_value = data["entry"][0]["changes"][0]["value"]
         if "messages" in change_value:
             message = change_value["messages"][0]
             from_number = message["from"]
@@ -62,7 +52,9 @@ async def whatsapp_handler(request: Request) -> Response:
             if message["type"] == "audio":
                 content = await process_audio_message(message)
             elif message["type"] == "image":
+                # Get image caption if any
                 content = message.get("image", {}).get("caption", "")
+                # Download and analyze image
                 image_bytes = await download_media(message["image"]["id"])
                 try:
                     description = await image_to_text.analyze_image(
@@ -73,7 +65,7 @@ async def whatsapp_handler(request: Request) -> Response:
                 except Exception as e:
                     logger.warning(f"Failed to analyze image: {e}")
             else:
-                content = message.get("text", {}).get("body", "")
+                content = message["text"]["body"]
 
             # Process message through the graph agent
             async with AsyncSqliteSaver.from_conn_string(settings.SHORT_TERM_MEMORY_DB_PATH) as short_term_memory:
@@ -83,11 +75,13 @@ async def whatsapp_handler(request: Request) -> Response:
                     {"configurable": {"thread_id": session_id}},
                 )
 
+                # Get the workflow type and response from the state
                 output_state = await graph.aget_state(config={"configurable": {"thread_id": session_id}})
 
             workflow = output_state.values.get("workflow", "conversation")
             response_message = output_state.values["messages"][-1].content
 
+            # Handle different response types based on workflow
             if workflow == "audio":
                 audio_buffer = output_state.values["audio_buffer"]
                 success = await send_response(from_number, response_message, "audio", audio_buffer)
@@ -108,13 +102,11 @@ async def whatsapp_handler(request: Request) -> Response:
             return Response(content="Status update received", status_code=200)
 
         else:
-            logger.warning("Unknown event type received")
             return Response(content="Unknown event type", status_code=400)
 
     except Exception as e:
         logger.error(f"Error processing message: {e}", exc_info=True)
         return Response(content="Internal server error", status_code=500)
-
 
 
 async def download_media(media_id: str) -> bytes:
